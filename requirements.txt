@@ -1,0 +1,5 @@
+docx2pdf
+PyPDF2
+pdf2docx
+Pillow
+cairosvg
