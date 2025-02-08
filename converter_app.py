@@ -39,7 +39,10 @@ def convert_pdf_to_docx(input_pdf, output_docx=None):
     return output_docx
 
 def convert_image(input_img, output_path):
-    """Converte immagini raster e SVG in vari formati."""
+    """
+    Converte immagini raster e SVG in vari formati.
+    Esempi: .png -> .jpg, .jpg -> .pdf, .svg -> .png, ecc.
+    """
     ext_in = os.path.splitext(input_img)[1].lower()
     ext_out = os.path.splitext(output_path)[1].lower()
 
@@ -50,14 +53,29 @@ def convert_image(input_img, output_path):
         elif ext_out == ".pdf":
             cairosvg.svg2pdf(url=input_img, write_to=output_path)
         elif ext_out == ".svg":
+            # Se l'output è di nuovo .svg, facciamo una copia (o nulla)
             import shutil
             shutil.copy(input_img, output_path)
+        elif ext_out in [".jpg", ".jpeg"]:
+            # svg -> jpg? Convertendo in PNG, poi da PNG a JPG
+            # per semplificare, generiamo prima un PNG temporaneo
+            temp_png = output_path + "_temp.png"
+            cairosvg.svg2png(url=input_img, write_to=temp_png)
+            with Image.open(temp_png) as im:
+                rgb_im = im.convert("RGB")  # JPG richiede RGB
+                rgb_im.save(output_path, "JPEG")
+            os.remove(temp_png)
         else:
             raise ValueError("Formato di output non gestito per file SVG.")
     else:
         # Raster -> ...
         with Image.open(input_img) as im:
-            im.save(output_path)
+            # Se vogliamo salvare in JPG, spesso serve convert('RGB')
+            if ext_out in [".jpg", ".jpeg"]:
+                im = im.convert("RGB")
+                im.save(output_path, "JPEG")
+            else:
+                im.save(output_path)
 
     return output_path
 
@@ -128,7 +146,7 @@ class ConverterApp(QMainWindow):
         self.setWindowTitle("Universal Converter (PyQt5)")
         self.setMinimumSize(600, 400)
 
-        # Stile basico di esempio (puoi personalizzare come vuoi)
+        # Stile un po' migliorato
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f0f0f0;
@@ -136,8 +154,10 @@ class ConverterApp(QMainWindow):
             QPushButton {
                 background-color: #007bff;
                 color: white;
-                padding: 6px;
-                border-radius: 4px;
+                padding: 8px;
+                border-radius: 5px;
+                font-weight: bold;
+                margin: 4px;
             }
             QPushButton:hover {
                 background-color: #0056b3;
@@ -147,6 +167,12 @@ class ConverterApp(QMainWindow):
             }
             QComboBox {
                 padding: 4px;
+                font-size: 13px;
+                margin: 4px;
+            }
+            QListWidget {
+                background-color: #ffffff;
+                margin: 4px;
             }
         """)
 
@@ -206,7 +232,10 @@ class ConverterApp(QMainWindow):
             self.update_possible_formats()
 
     def update_possible_formats(self):
-        """In base all'estensione, aggiorna la combo di formati."""
+        """
+        In base all'estensione, aggiorna la combo di formati.
+        Aggiunta di .webp e altri formati immagine.
+        """
         self.combo_format.clear()
         if not self.selected_file:
             return
@@ -214,14 +243,18 @@ class ConverterApp(QMainWindow):
         ext = os.path.splitext(self.selected_file)[1].lower()
         possible_formats = []
 
+        # docx
         if ext == ".docx":
-            possible_formats = [".pdf", ".pages"]  # docx -> pdf oppure docx -> pages (AppleScript)
+            possible_formats = [".pdf", ".pages"]  # docx -> pdf, docx -> pages
+        # pdf
         elif ext == ".pdf":
             possible_formats = [".docx", ".pages"]  # pdf -> docx, pdf -> pages
-        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"]:
-            possible_formats = [".jpg", ".png", ".pdf"]
+        # immagini
+        elif ext in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"]:
+            possible_formats = [".jpg", ".png", ".pdf", ".webp"]
+        # svg
         elif ext == ".svg":
-            possible_formats = [".svg", ".pdf", ".png"]
+            possible_formats = [".svg", ".pdf", ".png", ".jpg", ".webp"]
         else:
             possible_formats = []
 
@@ -247,30 +280,30 @@ class ConverterApp(QMainWindow):
         output_path = base + out_ext
 
         try:
-            # docx -> pdf
-            if (os.path.splitext(input_path)[1].lower() == ".docx") and (out_ext == ".pdf"):
+            in_ext = os.path.splitext(input_path)[1].lower()
+
+            # 1) docx -> pdf
+            if in_ext == ".docx" and out_ext == ".pdf":
                 convert_docx_to_pdf(input_path, output_path)
                 self.label_status.setText(f"Convertito in: {output_path}")
 
-            # docx -> pages
-            elif (os.path.splitext(input_path)[1].lower() == ".docx") and (out_ext == ".pages"):
+            # 2) docx -> pages
+            elif in_ext == ".docx" and out_ext == ".pages":
                 docx_to_pages(input_path, output_path)  # AppleScript
                 self.label_status.setText(f"Convertito in: {output_path}")
 
-            # pdf -> docx
-            elif (os.path.splitext(input_path)[1].lower() == ".pdf") and (out_ext == ".docx"):
+            # 3) pdf -> docx
+            elif in_ext == ".pdf" and out_ext == ".docx":
                 convert_pdf_to_docx(input_path, output_path)
                 self.label_status.setText(f"Convertito in: {output_path}")
 
-            # pdf -> pages
-            elif (os.path.splitext(input_path)[1].lower() == ".pdf") and (out_ext == ".pages"):
+            # 4) pdf -> pages
+            elif in_ext == ".pdf" and out_ext == ".pages":
                 convert_pdf_to_pages(input_path, output_path)
                 self.label_status.setText(f"Convertito in: {output_path}")
 
-            # immagini / svg -> ...
+            # 5) immagini / svg -> ...
             else:
-                # Immagine raster -> .jpg / .png / .pdf
-                # SVG -> .svg / .pdf / .png
                 convert_image(input_path, output_path)
                 self.label_status.setText(f"Convertito in: {output_path}")
 
@@ -360,7 +393,6 @@ class ConverterApp(QMainWindow):
             self.label_merge_status.setText(f"PDF uniti in: {output_path}")
         except Exception as e:
             QMessageBox.critical(self, "Errore Merge PDF", str(e))
-
 
 def main():
     app = QApplication(sys.argv)

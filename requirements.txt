@@ -3,3 +3,4 @@ PyPDF2
 pdf2docx
 Pillow
 cairosvg
+pyinstaller
