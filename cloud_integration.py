@@ -1,43 +1,31 @@
-# cloud_integration.py
-
 import os
-
-"""
-Esempio di integrazione con Google Drive attraverso PyDrive.
-Richiede:
-  pip install pydrive
-e un file 'client_secrets.json' con le credenziali OAuth2.
-"""
-
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-def _get_drive():
+def _init_drive():
     """
-    Inizializza e restituisce un'istanza di GoogleDrive autenticata.
+    Inizializza l'autenticazione con Google Drive.
+    Se esistono token validi (in credentials.json) non chiede nuovamente il login.
     """
     gauth = GoogleAuth()
-
-    # Se hai un file client_secrets.json e vuoi usare un server web locale
-    gauth.LocalWebserverAuth()  # aprirà il browser per login
-
-    # Crea l'oggetto drive
+    if not os.path.exists("client_secrets.json"):
+        raise FileNotFoundError("File client_secrets.json non trovato. Scarica le credenziali dalla Google Cloud Console e posizionale nella cartella del progetto.")
+    gauth.LocalWebserverAuth()
     return GoogleDrive(gauth)
 
-def upload_to_google_drive(file_path):
-    """Carica un file su Google Drive e ritorna l'ID del file."""
+def upload_to_drive(file_path):
+    """Carica un file su Drive, ritorna l'ID del file."""
     if not os.path.exists(file_path):
-        raise FileNotFoundError("File non esistente")
-
-    drive = _get_drive()
+        raise FileNotFoundError("Il file non esiste.")
+    drive = _init_drive()
     file_drive = drive.CreateFile({'title': os.path.basename(file_path)})
     file_drive.SetContentFile(file_path)
     file_drive.Upload()
-    return f"File caricato su Drive con ID: {file_drive['id']}"
+    return f"Caricato su Drive con ID: {file_drive['id']}"
 
-def download_from_google_drive(file_id, output_path):
-    """Scarica un file dal Drive usando l'ID."""
-    drive = _get_drive()
+def download_from_drive(file_id, output_path):
+    """Scarica un file da Drive (tramite ID)."""
+    drive = _init_drive()
     file_drive = drive.CreateFile({'id': file_id})
     file_drive.GetContentFile(output_path)
-    return f"File scaricato da Drive in: {output_path}"
+    return f"File Drive {file_id} scaricato in {output_path}"

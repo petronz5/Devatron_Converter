@@ -1,17 +1,14 @@
-# conversions.py
-
 import os
 import subprocess
 import shutil
-from pdf2docx import Converter as PDF2DocxConverter
 from docx2pdf import convert as docx2pdf_convert
+from pdf2docx import Converter as PDF2DocxConverter
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
-from PIL import Image, ImageEnhance
+from PIL import Image
 import cairosvg
 import docx
 
 def convert_docx_to_pdf(input_path, output_path=None):
-    """docx -> pdf via docx2pdf."""
     if not output_path:
         base, _ = os.path.splitext(input_path)
         output_path = base + ".pdf"
@@ -19,7 +16,6 @@ def convert_docx_to_pdf(input_path, output_path=None):
     return output_path
 
 def convert_pdf_to_docx(input_pdf, output_docx=None):
-    """pdf -> docx via pdf2docx."""
     if not output_docx:
         base, _ = os.path.splitext(input_pdf)
         output_docx = base + ".docx"
@@ -29,7 +25,6 @@ def convert_pdf_to_docx(input_pdf, output_docx=None):
     return output_docx
 
 def convert_docx_to_txt(input_docx, output_txt=None):
-    """docx -> txt usando python-docx."""
     if not output_txt:
         base, _ = os.path.splitext(input_docx)
         output_txt = base + ".txt"
@@ -41,7 +36,6 @@ def convert_docx_to_txt(input_docx, output_txt=None):
     return output_txt
 
 def convert_pdf_to_txt(input_pdf, output_txt=None):
-    """pdf -> txt usando `pdftotext` (richiede poppler)."""
     if not output_txt:
         base, _ = os.path.splitext(input_pdf)
         output_txt = base + ".txt"
@@ -52,10 +46,8 @@ def convert_pdf_to_txt(input_pdf, output_txt=None):
     return output_txt
 
 def convert_image(input_img, output_path):
-    """Converte immagini raster e SVG in vari formati."""
     ext_in = os.path.splitext(input_img)[1].lower()
     ext_out = os.path.splitext(output_path)[1].lower()
-
     if ext_in == ".svg":
         if ext_out == ".png":
             cairosvg.svg2png(url=input_img, write_to=output_path)
@@ -90,7 +82,6 @@ def convert_image(input_img, output_path):
     return output_path
 
 def merge_pdfs(pdf_list, output_pdf):
-    """Unisce più PDF in uno solo."""
     merger = PdfMerger()
     for pdf in pdf_list:
         merger.append(pdf)
@@ -99,7 +90,6 @@ def merge_pdfs(pdf_list, output_pdf):
     return output_pdf
 
 def convert_pdf_to_pages(pdf_file, output_pages=None):
-    """PDF -> .pages (via PDF->DOCX->PAGES)."""
     docx_temp = convert_pdf_to_docx(pdf_file)
     if not output_pages:
         base, _ = os.path.splitext(pdf_file)
@@ -108,7 +98,6 @@ def convert_pdf_to_pages(pdf_file, output_pages=None):
     return output_pages
 
 def docx_to_pages(docx_file, pages_file=None):
-    """docx -> pages via AppleScript (macOS + Pages)."""
     if not pages_file:
         base, _ = os.path.splitext(docx_file)
         pages_file = base + ".pages"
@@ -129,7 +118,6 @@ def docx_to_pages(docx_file, pages_file=None):
     return pages_file
 
 def split_pdf(input_pdf, output_pdf, pages_string):
-    """Estrae pagine definite in pages_string (es: '1-3,5,7-9')."""
     reader = PdfReader(input_pdf)
     writer = PdfWriter()
     pages_to_extract = parse_page_ranges(pages_string)
@@ -142,7 +130,6 @@ def split_pdf(input_pdf, output_pdf, pages_string):
     return output_pdf
 
 def parse_page_ranges(pages_string):
-    """Converte es: '1-3,5,7-9' in [1,2,3,5,7,8,9]."""
     result = []
     parts = pages_string.split(",")
     for part in parts:
