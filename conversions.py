@@ -141,3 +141,36 @@ def parse_page_ranges(pages_string):
         else:
             result.append(int(part))
     return sorted(set(result))
+
+def compress_folder(input_folder, output_zip=None):
+    """
+    Comprimi la cartella 'input_folder' in un file ZIP.
+    Se output_zip non viene fornito, viene creato un file con lo stesso nome della cartella + ".zip".
+    """
+    if not os.path.isdir(input_folder):
+        raise ValueError("Il percorso fornito non è una cartella.")
+    # Se non è stato fornito output_zip, crea il percorso di output basato sul nome della cartella
+    if not output_zip:
+        base_name = os.path.join(os.path.dirname(input_folder), os.path.basename(input_folder))
+        output_zip = base_name + ".zip"
+    else:
+        base_name = os.path.splitext(output_zip)[0]
+    # La funzione make_archive restituisce il percorso dell'archivio creato
+    archive_path = shutil.make_archive(base_name, 'zip', root_dir=input_folder)
+    return archive_path
+
+import zipfile
+
+def decompress_zip(input_zip, output_folder=None):
+    """
+    Decomprime il file ZIP 'input_zip' in una cartella.
+    Se 'output_folder' non viene fornito, viene creato un output basato sul nome del file ZIP.
+    """
+    if not output_folder:
+        base, _ = os.path.splitext(input_zip)
+        output_folder = base + "_unzipped"
+    with zipfile.ZipFile(input_zip, 'r') as zip_ref:
+        zip_ref.extractall(output_folder)
+    return output_folder
+
+

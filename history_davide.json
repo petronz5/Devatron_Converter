@@ -1,0 +1,87 @@
+[
+  {
+    "timestamp": "2025-02-17 16:06:59",
+    "input": "/Users/davide/Desktop/Tesi Petroni Maria.pdf",
+    "output": "/Users/davide/Desktop/Tesi Petroni Maria.docx"
+  },
+  {
+    "timestamp": "2025-02-17 16:06:56",
+    "input": "/Users/davide/Desktop/Indice.pdf",
+    "output": "/Users/davide/Desktop/Indice.docx"
+  },
+  {
+    "timestamp": "2025-02-17 16:06:56",
+    "input": "/Users/davide/Desktop/Tesi Petroni Maria.pdf",
+    "output": "/Users/davide/Desktop/Tesi Petroni Maria.docx"
+  },
+  {
+    "timestamp": "2025-02-17 16:06:56",
+    "input": "/Users/davide/Desktop/Indice.pdf",
+    "output": "/Users/davide/Desktop/Indice.docx"
+  },
+  {
+    "timestamp": "2025-02-17 16:06:56",
+    "input": "/Users/davide/Desktop/Tesi Petroni Maria.pdf",
+    "output": "/Users/davide/Desktop/Tesi Petroni Maria.docx"
+  },
+  {
+    "timestamp": "2025-02-17 16:05:54",
+    "input": "/Users/davide/Desktop/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg",
+    "output": "/Users/davide/Desktop/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.png"
+  },
+  {
+    "timestamp": "2025-02-17 16:05:54",
+    "input": "/Users/davide/Desktop/peakpx.jpg",
+    "output": "/Users/davide/Desktop/peakpx.png"
+  },
+  {
+    "timestamp": "2025-02-17 16:05:36",
+    "input": "/Users/davide/Desktop/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg",
+    "output": "/Users/davide/Desktop/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 16:05:36",
+    "input": "/Users/davide/Desktop/peakpx.jpg",
+    "output": "/Users/davide/Desktop/peakpx.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 16:01:04",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 16:01:04",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 15:43:53",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 15:43:53",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 15:42:50",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/peakpx.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 15:42:49",
+    "input": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg",
+    "output": "/Users/davide/Desktop/PicturesWallPaper/kobe_bean_bryant_with_a_back_in_background_of_people_and_lights_hd_kobe_bean_bryant-1920x1080.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 15:42:26",
+    "input": "/Users/davide/Desktop/Devatron.png",
+    "output": "/Users/davide/Desktop/Devatron.jpg"
+  },
+  {
+    "timestamp": "2025-02-17 12:55:51",
+    "input": "/Users/davide/Desktop/Esercizi in C.zip",
+    "output": "/Users/davide/Desktop/Esercizi in C_unzipped"
+  }
+]
