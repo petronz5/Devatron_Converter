@@ -3,7 +3,7 @@ import json
 import threading
 import time
 
-from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRectF
+from PyQt5.QtCore import QSettings, QDateTime, Qt, QPropertyAnimation, QEasingCurve, QRectF
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QColor
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel,
@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import (
     QSlider, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
 )
 
-# Import per Google OAuth (se desideri usarlo)
 try:
     from google_auth_oauthlib.flow import InstalledAppFlow
 except ImportError:
@@ -23,6 +22,28 @@ from conversions import (
     convert_image, merge_pdfs, convert_pdf_to_pages, split_pdf
 )
 from cloud_integration import upload_to_drive
+
+# -------------------------------------------------------------------
+# FUNZIONI di login persistente (definite a livello globale)
+# -------------------------------------------------------------------
+def save_login(username):
+    settings = QSettings("MyCompany", "ConverterApp")
+    settings.setValue("username", username)
+    settings.setValue("login_date", QDateTime.currentDateTime().toSecsSinceEpoch())
+
+def check_login():
+    settings = QSettings("MyCompany", "ConverterApp")
+    username = settings.value("username", "")
+    login_date = settings.value("login_date", 0, type=int)
+    if username and login_date:
+        current = QDateTime.currentDateTime().toSecsSinceEpoch()
+        if current - login_date < 30 * 24 * 3600:
+            return username
+    return None
+
+def clear_login():
+    settings = QSettings("MyCompany", "ConverterApp")
+    settings.clear()
 
 # =========================================================
 #   LanguageManager: Gestisce le traduzioni (it, en, es, fr)
@@ -239,6 +260,7 @@ class LanguageManager:
                 "USER_ICON": "Utilisateur: "
             }
         }
+
     def get_text(self, lang, key, **kwargs):
         if lang not in self.translations:
             lang = "it"
@@ -246,6 +268,146 @@ class LanguageManager:
         if kwargs:
             text = text.format(**kwargs)
         return text
+# =========================================================
+#   OptionsDialog: classe definita nello stesso file
+# =========================================================
+class OptionsDialog(QDialog):
+    def __init__(self, current_lang, current_theme, username):
+        super().__init__()
+        self.setWindowTitle("Opzioni")
+        self.setFixedSize(400, 320)
+        self.language = current_lang
+        self.theme = current_theme
+        self.username = username
+        self.lm = LanguageManager()
+        
+        tab_widget = QTabWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(tab_widget)
+        self.setLayout(layout)
+        
+        # Scheda Lingua
+        lang_tab = QWidget()
+        lang_layout = QVBoxLayout()
+        lang_tab.setLayout(lang_layout)
+        lang_label = QLabel(self.lm.get_text(self.language, "OPT_LANGUAGE"))
+        lang_layout.addWidget(lang_label)
+        self.combo_language = QComboBox()
+        self.combo_language.addItem("Italiano (it)", "it")
+        self.combo_language.addItem("English (en)", "en")
+        self.combo_language.addItem("Español (es)", "es")
+        self.combo_language.addItem("Français (fr)", "fr")
+        index = self.combo_language.findData(self.language)
+        if index >= 0:
+            self.combo_language.setCurrentIndex(index)
+        lang_layout.addWidget(self.combo_language)
+        tab_widget.addTab(lang_tab, self.lm.get_text(self.language, "OPT_TAB_LANGUAGE"))
+        
+        # Scheda Tema
+        theme_tab = QWidget()
+        theme_layout = QVBoxLayout()
+        theme_tab.setLayout(theme_layout)
+        theme_label = QLabel(self.lm.get_text(self.language, "OPT_THEME"))
+        theme_layout.addWidget(theme_label)
+        self.combo_theme = QComboBox()
+        self.combo_theme.addItem("Chiaro", "light")
+        self.combo_theme.addItem("Scuro", "dark")
+        idx = self.combo_theme.findData(self.theme)
+        if idx >= 0:
+            self.combo_theme.setCurrentIndex(idx)
+        theme_layout.addWidget(self.combo_theme)
+        tab_widget.addTab(theme_tab, self.lm.get_text(self.language, "OPT_TAB_THEME"))
+        
+        # Scheda Utente (cambio password con vecchia password e occhiello)
+        user_tab = QWidget()
+        user_layout = QFormLayout()
+        user_tab.setLayout(user_layout)
+        self.label_current_user = QLabel(self.username)
+        user_layout.addRow(self.lm.get_text(self.language, "USER_ICON"), self.label_current_user)
+        
+        # Campo vecchia password
+        self.edit_old_password = QLineEdit()
+        self.edit_old_password.setEchoMode(QLineEdit.Password)
+        user_layout.addRow(self.lm.get_text(self.language, "OLD_PASSWORD"), self.edit_old_password)
+        
+        # Campo nuova password + occhiello
+        self.edit_new_password = QLineEdit()
+        self.edit_new_password.setEchoMode(QLineEdit.Password)
+        self.btn_eye_new = QPushButton("👁")
+        self.btn_eye_new.setCheckable(True)
+        self.btn_eye_new.toggled.connect(self.toggle_new_password)
+        hbox_new = QHBoxLayout()
+        hbox_new.addWidget(self.edit_new_password)
+        hbox_new.addWidget(self.btn_eye_new)
+        user_layout.addRow(self.lm.get_text(self.language, "NEW_PASSWORD"), hbox_new)
+        
+        # Campo conferma password + occhiello
+        self.edit_confirm_password = QLineEdit()
+        self.edit_confirm_password.setEchoMode(QLineEdit.Password)
+        self.btn_eye_confirm = QPushButton("👁")
+        self.btn_eye_confirm.setCheckable(True)
+        self.btn_eye_confirm.toggled.connect(self.toggle_confirm_password)
+        hbox_conf = QHBoxLayout()
+        hbox_conf.addWidget(self.edit_confirm_password)
+        hbox_conf.addWidget(self.btn_eye_confirm)
+        user_layout.addRow(self.lm.get_text(self.language, "CONFIRM_PASSWORD"), hbox_conf)
+        
+        self.btn_update_password = QPushButton(self.lm.get_text(self.language, "UPDATE_PASSWORD"))
+        self.btn_update_password.clicked.connect(self.update_password)
+        user_layout.addRow(self.btn_update_password)
+        tab_widget.addTab(user_tab, self.lm.get_text(self.language, "OPT_TAB_USER"))
+        
+        # Pulsanti OK/Cancel
+        btn_layout = QHBoxLayout()
+        btn_ok = QPushButton("OK")
+        btn_ok.clicked.connect(self.accept)
+        btn_cancel = QPushButton(self.lm.get_text(self.language, "CANCEL_BUTTON"))
+        btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(btn_ok)
+        btn_layout.addWidget(btn_cancel)
+        layout.addLayout(btn_layout)
+    
+    def toggle_new_password(self, checked):
+        if checked:
+            self.edit_new_password.setEchoMode(QLineEdit.Normal)
+        else:
+            self.edit_new_password.setEchoMode(QLineEdit.Password)
+    
+    def toggle_confirm_password(self, checked):
+        if checked:
+            self.edit_confirm_password.setEchoMode(QLineEdit.Normal)
+        else:
+            self.edit_confirm_password.setEchoMode(QLineEdit.Password)
+    
+    def update_password(self):
+        old_pass = self.edit_old_password.text()
+        new_pass = self.edit_new_password.text()
+        conf_pass = self.edit_confirm_password.text()
+        if not old_pass or not new_pass or not conf_pass:
+            QMessageBox.warning(self, "Errore", "Inserisci tutte le password richieste.")
+            return
+        if new_pass != conf_pass:
+            QMessageBox.warning(self, "Errore", "Le nuove password non coincidono.")
+            return
+        try:
+            with open("users.json", "r") as f:
+                users_data = json.load(f)
+            if self.username not in users_data:
+                QMessageBox.warning(self, "Errore", "Utente non trovato.")
+                return
+            if users_data[self.username] != old_pass:
+                QMessageBox.warning(self, "Errore", "La vecchia password non è corretta.")
+                return
+            users_data[self.username] = new_pass
+            with open("users.json", "w") as f:
+                json.dump(users_data, f, indent=2)
+            QMessageBox.information(self, "OK", self.lm.get_text(self.language, "PASSWORD_UPDATED"))
+        except Exception as e:
+            QMessageBox.critical(self, "Errore", f"Errore durante l'aggiornamento della password:\n{str(e)}")
+    
+    def update_language(self, lang, lm):
+        self.language = lang
+        self.setWindowTitle(lm.get_text(lang, "OPTIONS", default="Opzioni"))
 
 # =========================================================
 #   ImageEditorWidget: Per modificare immagini in tempo reale
@@ -265,6 +427,7 @@ class ImageEditorWidget(QWidget):
         self.label_title = QLabel("Modifica Immagine")
         layout.addWidget(self.label_title)
 
+        # Riga dei pulsanti: Carica, Effetto B/N, Ritaglia
         hbox_btn = QHBoxLayout()
         self.btn_load = QPushButton("Carica Immagine")
         self.btn_load.clicked.connect(self.load_image)
@@ -279,22 +442,39 @@ class ImageEditorWidget(QWidget):
         hbox_btn.addWidget(self.btn_crop)
         layout.addLayout(hbox_btn)
 
+        # Slider per scaling
         self.slider_scale = QSlider(Qt.Horizontal)
         self.slider_scale.setRange(1, 300)
         self.slider_scale.setValue(100)
         self.slider_scale.valueChanged.connect(self.scale_image)
         layout.addWidget(self.slider_scale)
 
+        # Campo di input per dimensioni manuali (nuova larghezza)
+        dim_layout = QHBoxLayout()
+        self.width_input = QLineEdit()
+        self.width_input.setPlaceholderText("Nuova larghezza")
+        dim_layout.addWidget(self.width_input)
+        self.apply_size_btn = QPushButton("Applica dimensioni")
+        self.apply_size_btn.clicked.connect(self.apply_new_dimensions)
+        dim_layout.addWidget(self.apply_size_btn)
+        layout.addLayout(dim_layout)
+
+        # Vista grafica per mostrare l'immagine
         self.graphics_view = QGraphicsView()
         layout.addWidget(self.graphics_view)
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
-
         self.graphics_view.setMouseTracking(True)
         self.graphics_view.viewport().installEventFilter(self)
 
+        # Pulsante per salvare l'immagine modificata
+        self.btn_save = QPushButton("Salva Immagine")
+        self.btn_save.clicked.connect(self.save_image)
+        layout.addWidget(self.btn_save)
+
     def load_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Carica Immagine", "", "Immagini (*.png *.jpg *.jpeg *.bmp *.gif)")
+        path, _ = QFileDialog.getOpenFileName(self, "Carica Immagine", "", 
+                                              "Immagini (*.png *.jpg *.jpeg *.bmp *.gif)")
         if path:
             pm = QPixmap(path)
             if pm.isNull():
@@ -305,6 +485,7 @@ class ImageEditorWidget(QWidget):
 
     def show_pixmap(self, pm):
         self.scene.clear()
+        # Resetta lo slider al 100%
         self.slider_scale.setValue(100)
         self.pixmap_item = QGraphicsPixmapItem(pm)
         self.scene.addItem(self.pixmap_item)
@@ -317,6 +498,33 @@ class ImageEditorWidget(QWidget):
             new_w = int(self.current_pixmap.width() * scale_val / 100)
             pm_scaled = self.current_pixmap.scaledToWidth(new_w, Qt.SmoothTransformation)
             self.show_pixmap(pm_scaled)
+
+    def apply_new_dimensions(self, instance):
+        if not self.current_pixmap:
+            QMessageBox.warning(self, "Errore", "Nessuna immagine caricata!")
+            return
+        try:
+            new_width = int(self.width_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "Errore", "Inserisci un valore numerico valido per la larghezza!")
+            return
+        # Calcola l'altezza in modo da mantenere il rapporto d'aspetto
+        aspect_ratio = self.current_pixmap.height() / self.current_pixmap.width()
+        new_height = int(new_width * aspect_ratio)
+        scaled_pixmap = self.current_pixmap.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.show_pixmap(scaled_pixmap)
+
+    def save_image(self):
+        if not self.current_pixmap:
+            QMessageBox.warning(self, "Errore", "Nessuna immagine da salvare!")
+            return
+        path, _ = QFileDialog.getSaveFileName(self, "Salva Immagine", "", 
+                                              "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)")
+        if path:
+            if not self.current_pixmap.save(path):
+                QMessageBox.critical(self, "Errore", "Impossibile salvare l'immagine.")
+            else:
+                QMessageBox.information(self, "Salvataggio", "Immagine salvata correttamente!")
 
     def apply_bw_effect(self):
         if not self.current_pixmap:
@@ -377,7 +585,6 @@ class ImageEditorWidget(QWidget):
         self.btn_load.setText(lm.get_text(lang, "LOAD_IMAGE"))
         self.btn_apply_effect.setText(lm.get_text(lang, "APPLY_EFFECT"))
         self.btn_crop.setText(lm.get_text(lang, "CROP_IMAGE"))
-        # Puoi aggiungere un'etichetta per lo slider se necessario.
 
 # =========================================================
 #   RegisterDialog
@@ -943,7 +1150,6 @@ class MainWindow(QMainWindow):
         self.nav_panel.setLayout(nav_layout)
         self.nav_panel.setStyleSheet("background-color: #cccccc; color: #000;")
         
-        # Pulsanti di menu con effetto hover/selected
         self.btn_single = QPushButton()
         self.btn_single.setObjectName("menuButton")
         self.btn_single.clicked.connect(lambda: self.switch_page(0))
@@ -985,12 +1191,11 @@ class MainWindow(QMainWindow):
         self.btn_logout.clicked.connect(self.do_logout)
         nav_layout.addWidget(self.btn_logout)
         
-        # StackedWidget per le pagine
+        # StackedWidget
         self.stack = QStackedWidget()
         self.page_single = SingleConversionWidget(self.advanced_options)
         self.page_merge = MergePDFWidget()
         self.page_split = SplitPDFWidget()
-        from PyQt5.QtWidgets import QGraphicsView  # Se ImageEditorWidget è definito qui
         self.page_image_editor = ImageEditorWidget()
         self.stack.addWidget(self.page_single)
         self.stack.addWidget(self.page_merge)
@@ -1003,7 +1208,27 @@ class MainWindow(QMainWindow):
         self.apply_theme()
         self.apply_language()
         self.update_menu_styles()
-    
+
+    # --------------------------------------------------------
+    # SEZIONE: Metodi di login persistente
+    # --------------------------------------------------------
+    def do_logout(self):
+        # Cancella il login persistente
+        clear_login()
+        self.close()   # Chiude la MainWindow
+
+        from gui import LoginDialog  # Se LoginDialog è nello stesso file potresti non aver bisogno di import
+        login = LoginDialog()
+        if login.exec_() == QDialog.Accepted:
+            # Se l'utente fa di nuovo login
+            save_login(login.logged_username)
+            new_main = MainWindow(login.logged_username, login.logged_password)
+            new_main.show()
+
+    # --------------------------------------------------------
+    # FINE SEZIONE: Metodi di login persistente
+    # --------------------------------------------------------
+
     def toggle_nav(self):
         animation = QPropertyAnimation(self.nav_panel, b"maximumWidth")
         animation.setDuration(300)
@@ -1040,9 +1265,6 @@ class MainWindow(QMainWindow):
             self.current_theme = dlg.combo_theme.currentData()
             self.apply_theme()
             self.apply_language()
-    
-    def do_logout(self):
-        self.close()
     
     def apply_theme(self):
         if self.current_theme == "light":
@@ -1091,7 +1313,7 @@ class MainWindow(QMainWindow):
                     border: 1px solid #FFA500;
                 }
             """)
-
+    
     def apply_language(self):
         lm = self.language_manager
         lang = self.current_lang
